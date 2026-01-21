@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     });
 
     // Parse requirements JSON
-    const transformed = bounties.map(b => ({
+    const transformed = bounties.map((b: any) => ({
       ...b,
       requirements: JSON.parse(b.requirements),
       aiDraft: b.aiDraft ? JSON.parse(b.aiDraft) : null,
