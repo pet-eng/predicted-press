@@ -114,7 +114,7 @@ export async function fetchPriceHistory(
     const startTs = endTs - (days * 24 * 60 * 60);
 
     const response = await fetch(
-      `${CLOB_API}/prices-history?market=${conditionId}&startTs=${startTs}&endTs=${endTs}&fidelity=60`,
+      `${POLYMARKET_API}/prices-history?market=${conditionId}&startTs=${startTs}&endTs=${endTs}&fidelity=60`,
       {
         headers: {
           'Accept': 'application/json',
