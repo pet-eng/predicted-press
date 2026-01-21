@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { fetchMarkets, getTrendingMarkets } from '@/lib/polymarket';
 
 export async function GET(request: Request) {
