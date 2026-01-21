@@ -1,0 +1,38 @@
+{
+  "name": "predicted-press",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "generate-articles": "tsx scripts/generate-articles.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.14.1",
+    "@prisma/client": "^5.9.0",
+    "@types/pg": "^8.16.0",
+    "date-fns": "^3.3.0",
+    "lucide-react": "^0.312.0",
+    "next": "14.1.0",
+    "pg": "^8.17.2",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^2.10.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "postcss": "^8.4.0",
+    "prisma": "^5.9.0",
+    "tailwindcss": "^3.4.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}
