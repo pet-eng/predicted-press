@@ -1,8 +1,8 @@
 /**
  * AI Article Generation using Claude
  *
- * This generates initial drafts for bounties based on market data.
- * Human editors review and enhance before publishing.
+ * This generates journalist-quality articles based on prediction market data.
+ * Articles are written in an accessible but analytical style, similar to Vox or FiveThirtyEight.
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -24,55 +24,79 @@ export interface ArticleDraft {
 }
 
 /**
- * Generate an article draft from market data
+ * Generate a journalist-quality article from market data
  */
 export async function generateArticleDraft(
   market: Market,
   priceHistory: { date: string; probability: number }[] = [],
   additionalContext?: string
 ): Promise<ArticleDraft> {
-
   const change24h = calculateChange(priceHistory, 1);
   const change7d = calculateChange(priceHistory, 7);
+  const change30d = calculateChange(priceHistory, 30);
 
-  const prompt = `You are a journalist for Predicted Press, a publication that transforms prediction market data into insightful news analysis. Your style is authoritative yet accessible, similar to The Economist or Bloomberg.
+  const prompt = `You are a senior journalist for Predicted Press, writing in the style of FiveThirtyEight, Vox, or The Atlantic. Your writing is:
+- Accessible but analytical - you explain complex topics without dumbing them down
+- Story-driven - you find the human angle, the "why it matters" narrative
+- Data-informed but not data-obsessed - numbers support the story, they don't replace it
+- Contextual - you connect current events to historical precedents and broader trends
 
-Write an article about this prediction market:
+Write a feature article about this prediction market:
 
 MARKET DATA:
 - Question: ${market.title}
 - Current Probability: ${market.probability}%
-- 24h Change: ${change24h >= 0 ? '+' : ''}${change24h}%
-- 7d Change: ${change7d >= 0 ? '+' : ''}${change7d}%
+- 24-hour change: ${change24h >= 0 ? '+' : ''}${change24h}%
+- 7-day change: ${change7d >= 0 ? '+' : ''}${change7d}%
+- 30-day change: ${change30d >= 0 ? '+' : ''}${change30d}%
 - Trading Volume: $${formatNumber(market.volume)}
-- Participants: ~${Math.floor(market.volume / 500).toLocaleString()} traders (estimated)
+- Active Traders: ~${Math.floor(market.volume / 500).toLocaleString()} (estimated)
 - Resolution Date: ${market.endDate || 'TBD'}
 - Category: ${market.category}
-- Source: Polymarket
 
 ${additionalContext ? `ADDITIONAL CONTEXT:\n${additionalContext}\n` : ''}
 
-Write a comprehensive analysis article. Your response should be valid JSON with this structure:
+WRITING GUIDELINES:
+1. LEAD WITH A HOOK - Start with a compelling scene, anecdote, or surprising fact. Don't start with "Prediction markets show..." or statistics. Make me want to read more.
+
+2. EXPLAIN THE STAKES - Why should readers care? What are the real-world implications? Who wins, who loses?
+
+3. FOLLOW THE MONEY - Why are sophisticated traders betting this way? What do they know that casual observers might miss?
+
+4. PRESENT MULTIPLE PERSPECTIVES - Interview-style quotes from hypothetical analysts on different sides. "Bulls point to..." and "Bears argue..."
+
+5. HISTORICAL CONTEXT - Has something like this happened before? What can we learn from similar situations?
+
+6. THE CONTRARIAN VIEW - What's the strongest argument against the current market consensus? Why might the 'smart money' be wrong?
+
+7. PRACTICAL IMPLICATIONS - What should readers watch for? What events could shift the probability dramatically?
+
+8. END WITH FORWARD LOOK - Don't just summarize. Leave readers with something to think about.
+
+FORMATTING REQUIREMENTS:
+- 1200-1800 words
+- Use ## for section headers (but don't overdo it - 3-4 sections max)
+- Write in a conversational but authoritative tone
+- Include specific details and examples
+- Use short paragraphs for readability
+- Bold key insights sparingly
+
+Your response should be valid JSON:
 {
-  "headline": "The headline starting with the probability, e.g., '34% Chance: [Event]'",
-  "subheadline": "A compelling one-line summary of what's driving the probability",
-  "excerpt": "2-3 sentence summary for article previews",
-  "content": "Full article in Markdown format (800-1200 words). Include:\n- Opening paragraph contextualizing the probability\n- Section on factors driving the probability UP\n- Section on counterarguments/risks (factors driving DOWN)\n- Analysis of recent market movements\n- Conclusion with forward-looking perspective\n\nUse ## for section headers. Be specific and cite the market data.",
-  "keyFactors": ["Array of 3-5 factors pushing probability up"],
-  "counterarguments": ["Array of 3-5 factors that could push probability down"],
-  "suggestedCategory": "Politics|Technology|Economics|Markets|Geopolitics|Sports|Culture"
+  "headline": "A punchy, intriguing headline (NOT starting with probability - save that for the subheadline)",
+  "subheadline": "Include the probability here: '${market.probability}% chance...' plus one key insight",
+  "excerpt": "2-3 sentence hook that makes readers click",
+  "content": "Full article in Markdown. Remember: accessible but analytical, story-driven, thoroughly researched.",
+  "keyFactors": ["3-5 concrete factors pushing probability up"],
+  "counterarguments": ["3-5 concrete factors that could push probability down"],
+  "suggestedCategory": "Politics|Technology|Economics|Markets|Geopolitics|Culture"
 }
 
-Important:
-- Lead with data, not speculation
-- Explain WHY the market prices it this way
-- Acknowledge uncertainty - these are probabilities, not predictions
-- Keep tone professional and analytical
-- Don't include affiliate links or CTAs - those are added separately`;
+IMPORTANT: Write like a human journalist, not an AI assistant. No "Let's dive in" or "In conclusion". Be specific, be vivid, be interesting.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 4000,
+    max_tokens: 6000,
     messages: [
       {
         role: 'user',
@@ -112,22 +136,25 @@ export async function generateBountyHeadline(market: Market): Promise<string> {
  * Generate bounty requirements based on market characteristics
  */
 export function generateBountyRequirements(market: Market): string[] {
-  const requirements: string[] = ['800-1500 words'];
+  const requirements: string[] = ['1200-1800 words'];
 
   if (market.volume > 1000000) {
     requirements.push('Include volume/liquidity analysis');
   }
 
   if (market.category === 'Politics') {
-    requirements.push('Reference polling data or precedents');
+    requirements.push('Reference polling data or historical precedents');
   } else if (market.category === 'Economics') {
     requirements.push('Include relevant economic indicators');
   } else if (market.category === 'Technology') {
     requirements.push('Technical background explanation');
+  } else if (market.category === 'Geopolitics') {
+    requirements.push('International relations context');
   }
 
-  requirements.push('Cite at least 2 external sources');
-  requirements.push('Include bull and bear cases');
+  requirements.push('Cite at least 3 external sources or precedents');
+  requirements.push('Include bull and bear cases with specific arguments');
+  requirements.push('Explain real-world implications for ordinary people');
 
   return requirements;
 }
