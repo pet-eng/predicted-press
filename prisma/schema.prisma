@@ -15,27 +15,31 @@ datasource db {
 // ==========================================
 
 model Market {
-  id            String   @id
-  title         String
-  slug          String   @unique
-  probability   Int      // 0-100
-  volume        Float
-  liquidity     Float
-  endDate       DateTime?
-  category      String
-  source        String   @default("polymarket")
+  id              String    @id
+  title           String
+  slug            String    @unique
+  probability     Int       // 0-100
+  volume          Float
+  liquidity       Float
+  endDate         DateTime?
+  category        String
+  source          String    @default("polymarket")
 
   // Price history tracking
-  priceHistory  PricePoint[]
+  priceHistory    PricePoint[]
 
   // Related content
-  articles      Article[]
-  bounties      Bounty[]
+  articles        Article[]
+  bounties        Bounty[]
 
   // Metadata
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  lastSyncedAt  DateTime @default(now())
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  lastSyncedAt    DateTime  @default(now())
+  
+  // Staleness tracking - probability at last article generation
+  lastArticleProbability  Int?
+  lastArticleGeneratedAt  DateTime?
 }
 
 model PricePoint {
@@ -54,41 +58,49 @@ model PricePoint {
 // ==========================================
 
 model Article {
-  id            String        @id @default(cuid())
-  slug          String        @unique
+  id            String   @id @default(cuid())
+  slug          String   @unique
   headline      String
   subheadline   String?
   excerpt       String
-  content       String        // Markdown content
+  content       String   // Markdown content
   category      String
 
   // Linked market
   marketId      String?
-  market        Market?       @relation(fields: [marketId], references: [id])
+  market        Market?  @relation(fields: [marketId], references: [id])
 
   // Author info
   authorId      String?
-  author        Author?       @relation(fields: [authorId], references: [id])
+  author        Author?  @relation(fields: [authorId], references: [id])
 
   // Editorial workflow
   status        ArticleStatus @default(DRAFT)
   publishedAt   DateTime?
 
   // AI generation tracking
-  aiGenerated   Boolean       @default(false)
+  aiGenerated   Boolean  @default(false)
   aiDraftId     String?
 
   // Metrics
-  views         Int           @default(0)
-  affiliateClicks Int         @default(0)
+  views         Int      @default(0)
+  affiliateClicks Int    @default(0)
 
   // Metadata
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // From bounty?
-  bountyId      String?       @unique
-  bounty        Bounty?       @relation(fields: [bountyId], references: [id])
+  bountyId      String?  @unique
+  bounty        Bounty?  @relation(fields: [bountyId], references: [id])
+  
+  // Staleness tracking - article chain/versioning
+  probabilityAtGeneration Int?
+  version                 Int     @default(1)
+  parentArticleId         String?
+  parentArticle           Article? @relation("ArticleChain", fields: [parentArticleId], references: [id])
+  childArticles           Article[] @relation("ArticleChain")
+  isLatest                Boolean @default(true)
 }
 
 enum ArticleStatus {
@@ -106,36 +118,36 @@ enum ArticleStatus {
 // ==========================================
 
 model Author {
-  id              String   @id @default(cuid())
-  email           String   @unique
-  name            String
-  bio             String?
-  avatarUrl       String?
-  role            String   @default("Contributor")
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  bio           String?
+  avatarUrl     String?
+  role          String   @default("Contributor")
 
   // Performance
-  reputation      Float    @default(0)
-  articlesCount   Int      @default(0)
-  totalEarnings   Float    @default(0)
-  completionRate  Float    @default(100)
+  reputation    Float    @default(0)
+  articlesCount Int      @default(0)
+  totalEarnings Float    @default(0)
+  completionRate Float   @default(100)
 
   // Tier system
-  tier            AuthorTier @default(CONTRIBUTOR)
+  tier          AuthorTier @default(CONTRIBUTOR)
 
   // Specialties (JSON array of categories)
-  specialties     String   @default("[]")
+  specialties   String   @default("[]")
 
   // Payment info (encrypted in production)
-  paymentMethod   String?
-  paymentDetails  String?
+  paymentMethod String?
+  paymentDetails String?
 
   // Content
-  articles        Article[]
-  bounties        Bounty[]
+  articles      Article[]
+  bounties      Bounty[]
 
   // Metadata
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }
 
 enum AuthorTier {
@@ -151,46 +163,46 @@ enum AuthorTier {
 // ==========================================
 
 model Bounty {
-  id              String       @id @default(cuid())
-  headline        String
-  description     String?
+  id            String   @id @default(cuid())
+  headline      String
+  description   String?
 
   // Linked market
-  marketId        String
-  market          Market       @relation(fields: [marketId], references: [id])
+  marketId      String
+  market        Market   @relation(fields: [marketId], references: [id])
 
   // Reward
-  baseReward      Float
-  bonusPool       Float        @default(0)
+  baseReward    Float
+  bonusPool     Float    @default(0)
 
   // Requirements (JSON)
-  requirements    String       @default("[]")
+  requirements  String   @default("[]")
 
   // Status
-  status          BountyStatus @default(OPEN)
-  deadline        DateTime
+  status        BountyStatus @default(OPEN)
+  deadline      DateTime
 
   // Assignment
-  claimedById     String?
-  claimedBy       Author?      @relation(fields: [claimedById], references: [id])
-  claimedAt       DateTime?
+  claimedById   String?
+  claimedBy     Author?  @relation(fields: [claimedById], references: [id])
+  claimedAt     DateTime?
 
   // AI draft
-  aiDraft         String?      // Pre-generated starting point
+  aiDraft       String?
   aiDraftCreatedAt DateTime?
 
   // Result
-  article         Article?
-  completedAt     DateTime?
-  paidOut         Boolean      @default(false)
-  paidAmount      Float?
+  article       Article?
+  completedAt   DateTime?
+  paidOut       Boolean  @default(false)
+  paidAmount    Float?
 
   // Metadata
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   // Priority/heat
-  priority        BountyPriority @default(NORMAL)
+  priority      BountyPriority @default(NORMAL)
 }
 
 enum BountyStatus {
@@ -223,8 +235,8 @@ model Subscriber {
   tier          SubscriberTier @default(FREE)
 
   // Preferences
-  categories    String   @default("[]") // JSON array
-  alertThreshold Int     @default(5)    // % change to trigger alert
+  categories    String   @default("[]")
+  alertThreshold Int     @default(5)
 
   // Stripe
   stripeCustomerId String?
@@ -246,12 +258,12 @@ enum SubscriberTier {
 // ==========================================
 
 model AnalyticsEvent {
-  id            String   @id @default(cuid())
-  type          String   // pageview, affiliate_click, conversion, etc.
-  articleId     String?
-  marketId      String?
-  metadata      String?  // JSON
-  timestamp     DateTime @default(now())
+  id        String   @id @default(cuid())
+  type      String
+  articleId String?
+  marketId  String?
+  metadata  String?
+  timestamp DateTime @default(now())
 
   @@index([type, timestamp])
   @@index([articleId])
