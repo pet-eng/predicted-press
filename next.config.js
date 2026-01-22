@@ -1,10 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Enable experimental features
-  experimental: {
-    serverActions: true,
-  },
-
   // Image optimization for external sources
   images: {
     remotePatterns: [
